@@ -1,8 +1,58 @@
-import re
-import json
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .header-bg { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 3rem 0; margin-bottom: -40px; padding-bottom: 70px; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); text-align: center; border-bottom: 5px solid #28a745; }
+    </style>
+</head>
+<body>
+    <div class="header-bg text-center">
+        <h1 class="display-5 fw-bold mb-2">Campaign Performance</h1>
+        <p class="lead text-light opacity-75">Analytics Overview (Feb 13 - Mar 15)</p>
+    </div>
 
-# 1. Your FULL Raw Data
-raw_data = """
+    <div class="container mb-5 position-relative" style="z-index: 10;">
+        <div class="row justify-content-center mb-5">
+            <div class="col-md-6 col-lg-4">
+                <div class="stat-card">
+                    <h5 class="text-muted text-uppercase mb-2" style="font-size: 0.9rem; letter-spacing: 1px;">Grand Total Views</h5>
+                    <h2 id="grandTotal" class="display-6 fw-bold text-dark mb-0">Loading...</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 mb-4 border-0 shadow-sm rounded-4">
+            <h5 class="mb-4 fw-bold text-secondary">Views Distribution by Avatar</h5>
+            <canvas id="viewsChart" height="80"></canvas>
+        </div>
+
+        <div class="card p-4 border-0 shadow-sm rounded-4">
+            <h5 class="mb-4 fw-bold text-secondary">Detailed Breakdown</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light text-muted">
+                        <tr><th>Avatar Name</th><th>Platform</th><th>Total Views</th><th>Content Links</th></tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalsContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // Your complete dataset safely stored as text
+        const rawData = `
 Lex Youtube Views (13th February- 15th March) 1,01,178
 https://www.youtube.com/shorts/UExOKZO9MTM
 https://www.youtube.com/shorts/jDDUSn49mek
@@ -286,240 +336,70 @@ PokipodcastOriginal Instagram Views (13th February- 15th March) 2,768
 https://www.instagram.com/pokepodcastoriginal/reel/DUtbNuJE1hA/
 https://www.instagram.com/pokepodcastoriginal/reel/DU1W_D1EyM9/
 https://www.instagram.com/pokepodcastoriginal/reel/DU1YBHak5Fx/
-"""
+        `;
 
-# 2. Parse the Data
-data = []
-current_avatar = None
-current_platform = None
-current_views = None
-current_links = []
+        // Process data
+        const lines = rawData.split('\n');
+        let data = [];
+        let current = null;
 
-for line in raw_data.strip().split('\n'):
-    line = line.strip()
-    if not line: continue
-    
-    match = re.search(r'(.+?)\s+(Youtube|Instagram)\s+Views.*?\)\s+([\d,]+)', line, re.IGNORECASE)
-    if match:
-        if current_avatar:
-            data.append({
-                'avatar': current_avatar.strip().title(),
-                'platform': current_platform.strip().title(),
-                'views': int(current_views.replace(',', '')),
-                'links': current_links
-            })
-        current_avatar = match.group(1).strip()
-        current_platform = match.group(2).strip()
-        current_views = match.group(3).strip()
-        current_links = []
-    elif line.startswith('http'):
-        current_links.append(line)
+        lines.forEach(line => {
+            line = line.trim();
+            if (!line) return;
+            let match = line.match(/(.+?)\s+(Youtube|Instagram)\s+Views.*?\)\s+([\d,]+)/i);
+            if (match) {
+                if (current) data.push(current);
+                current = {
+                    avatar: match[1].trim(),
+                    platform: match[2].trim(),
+                    views: parseInt(match[3].replace(/,/g, '')),
+                    links: []
+                };
+            } else if (line.startsWith('http')) {
+                if(current) current.links.push(line);
+            }
+        });
+        if (current) data.push(current);
 
-if current_avatar:
-    data.append({
-        'avatar': current_avatar.strip().title(),
-        'platform': current_platform.strip().title(),
-        'views': int(current_views.replace(',', '')),
-        'links': current_links
-    })
+        // Build UI
+        let tbody = document.getElementById('tableBody');
+        let modals = document.getElementById('modalsContainer');
+        let grandTotal = 0;
+        let chartMap = {};
 
-# 3. Aggregate data for the Chart and Dashboard Header
-chart_data = {}
-grand_total_views = 0
+        data.forEach((item, i) => {
+            grandTotal += item.views;
+            chartMap[item.avatar] = (chartMap[item.avatar] || 0) + item.views;
 
-for item in data:
-    name = item['avatar']
-    views = item['views']
-    grand_total_views += views
-    if name not in chart_data:
-        chart_data[name] = 0
-    chart_data[name] += views
+            let badge = item.platform.toLowerCase() === 'youtube' ? 'danger' : 'primary';
+            let preview = item.links.slice(0, 2).map(l => `<li><a href="${l}" target="_blank" class="d-inline-block text-truncate text-decoration-none" style="max-width:220px;">${l}</a></li>`).join('');
+            
+            if (item.links.length > 2) {
+                preview += `<button class="btn btn-sm btn-outline-primary mt-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal${i}">See All ${item.links.length} Links</button>`;
+            } else if (item.links.length === 0) {
+                preview += `<li><span class="text-muted">No links</span></li>`;
+            }
 
-avatars = list(chart_data.keys())
-total_views = list(chart_data.values())
+            // Insert Table Row
+            tbody.innerHTML += `<tr><td class="fw-bold">${item.avatar}</td><td><span class="badge bg-${badge}">${item.platform}</span></td><td class="fw-bold fs-6">${item.views.toLocaleString()}</td><td><ul class="list-unstyled mb-0" style="font-size:0.85rem;">${preview}</ul></td></tr>`;
 
-# 4. Generate HTML Table Rows and Modals (Separate Pages)
-table_rows = ""
-modals_html = ""
+            // Insert Pop-Up Modal
+            let fullLinks = item.links.map(l => `<a href="${l}" target="_blank" class="list-group-item list-group-item-action text-break text-primary">${l}</a>`).join('');
+            modals.innerHTML += `<div class="modal fade" id="modal${i}"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content"><div class="modal-header bg-light"><h5 class="modal-title fw-bold">${item.avatar} <span class="badge bg-${badge}">${item.platform}</span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded border"><span class="text-muted text-uppercase fw-bold" style="font-size:0.85rem;">Total Views</span><span class="fs-4 fw-bold text-success">${item.views.toLocaleString()}</span></div><h6 class="fw-bold mb-3 text-secondary">All Links (${item.links.length})</h6><div class="list-group list-group-flush border rounded">${fullLinks}</div></div></div></div></div>`;
+        });
 
-for i, item in enumerate(data):
-    modal_id = f"modal_{i}"
-    
-    # Generate Preview Links for the table (Show max 2)
-    preview_links_html = ""
-    for link in item['links'][:2]:
-        preview_links_html += f'<li><a href="{link}" target="_blank" class="text-decoration-none text-truncate d-inline-block" style="max-width: 250px;">{link}</a></li>'
-    
-    # Add "See All" button if there are more links
-    if len(item['links']) > 2:
-        preview_links_html += f'<button class="btn btn-sm btn-outline-primary mt-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#{modal_id}">See All {len(item["links"])} Links</button>'
-    elif len(item['links']) == 0:
-        preview_links_html += "<li><span class='text-muted'>No links provided</span></li>"
-        
-    table_rows += f"""
-    <tr>
-        <td class="fw-bold">{item['avatar']}</td>
-        <td><span class="badge bg-{'danger' if item['platform'] == 'Youtube' else 'primary'}">{item['platform']}</span></td>
-        <td data-order="{item['views']}"><span class="fw-bold text-dark fs-6">{item['views']:,}</span></td>
-        <td><ul class="list-unstyled mb-0" style="font-size: 0.85rem;">{preview_links_html}</ul></td>
-    </tr>
-    """
+        // Update Grand Total
+        document.getElementById('grandTotal').innerText = grandTotal.toLocaleString();
 
-    # Generate the Modal (Pop-up Page) for this row
-    full_links_list = "".join([f'<a href="{link}" target="_blank" class="list-group-item list-group-item-action text-break text-primary">{link}</a>' for link in item['links']])
-    
-    modals_html += f"""
-    <div class="modal fade" id="{modal_id}" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header bg-light">
-            <h5 class="modal-title fw-bold">
-                {item['avatar']} <span class="badge bg-{'danger' if item['platform'] == 'Youtube' else 'primary'} ms-2">{item['platform']}</span>
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body bg-white">
-            <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded border">
-                <span class="text-muted text-uppercase fw-bold" style="font-size: 0.85rem;">Total Views Generated</span>
-                <span class="fs-4 fw-bold text-success">{item['views']:,}</span>
-            </div>
-            <h6 class="fw-bold mb-3 text-secondary">All Content Links ({len(item['links'])})</h6>
-            <div class="list-group list-group-flush border rounded">
-                {full_links_list}
-            </div>
-          </div>
-          <div class="modal-footer bg-light">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    """
-
-# 5. Build the Full HTML File
-html_content = f"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avatar Analytics Dashboard</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    
-    <style>
-        body {{ background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
-        .card {{ border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 12px; }}
-        .header-bg {{ background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 3rem 0; margin-bottom: -50px; padding-bottom: 80px; }}
-        .stat-card {{ background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); text-align: center; border-bottom: 5px solid #28a745; }}
-    </style>
-</head>
-<body>
-
-    <div class="header-bg text-center">
-        <h1 class="display-5 fw-bold mb-2">Campaign Performance</h1>
-        <p class="lead text-light opacity-75">Analytics Overview (Feb 13 - Mar 15)</p>
-    </div>
-
-    <div class="container mb-5 position-relative" style="z-index: 10;">
-        
-        <div class="row justify-content-center mb-5">
-            <div class="col-md-6 col-lg-4">
-                <div class="stat-card">
-                    <h5 class="text-muted text-uppercase mb-2" style="font-size: 0.9rem; letter-spacing: 1px;">Grand Total Views</h5>
-                    <h2 class="display-6 fw-bold text-dark mb-0">{grand_total_views:,}</h2>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card p-4">
-                    <h5 class="mb-4 fw-bold text-secondary">Views Distribution by Avatar</h5>
-                    <canvas id="viewsChart" height="80"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-12">
-                <div class="card p-4">
-                    <h5 class="mb-4 fw-bold text-secondary">Detailed Breakdown</h5>
-                    <div class="table-responsive">
-                        <table id="analyticsTable" class="table table-hover align-middle">
-                            <thead class="table-light text-muted">
-                                <tr>
-                                    <th>Avatar Name</th>
-                                    <th>Platform</th>
-                                    <th>Total Views</th>
-                                    <th>Content Links</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {table_rows}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {modals_html}
-
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        // Initialize Interactive Table
-        $(document).ready(function() {{
-            $('#analyticsTable').DataTable({{
-                "order": [[ 2, "desc" ]], // Sort by views descending
-                "pageLength": 10,
-                "language": {{
-                    "search": "Filter records:"
-                }}
-            }});
-        }});
-
-        // Initialize Chart
-        const ctx = document.getElementById('viewsChart').getContext('2d');
-        new Chart(ctx, {{
+        // Build Chart
+        new Chart(document.getElementById('viewsChart'), {
             type: 'bar',
-            data: {{
-                labels: {json.dumps(avatars)},
-                datasets: [{{
-                    label: 'Total Views (Combined)',
-                    data: {json.dumps(total_views)},
-                    backgroundColor: 'rgba(42, 82, 152, 0.7)',
-                    borderColor: 'rgba(42, 82, 152, 1)',
-                    borderWidth: 1,
-                    borderRadius: 6
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                plugins: {{
-                    legend: {{ display: false }}
-                }},
-                scales: {{
-                    y: {{ beginAtZero: true, grid: {{ color: '#e9ecef' }} }},
-                    x: {{ grid: {{ display: false }} }}
-                }}
-            }}
-        }});
+            data: { 
+                labels: Object.keys(chartMap), 
+                datasets: [{ label: 'Total Views (Combined)', data: Object.values(chartMap), backgroundColor: 'rgba(42, 82, 152, 0.7)', borderColor: '#2a5298', borderWidth: 1, borderRadius: 6 }] 
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
     </script>
 </body>
 </html>
-"""
-
-# 6. Save the file
-filename = "interactive_dashboard.html"
-with open(filename, "w", encoding="utf-8") as f:
-    f.write(html_content)
-
-print("Success! Open the new 'interactive_dashboard.html' file.")
