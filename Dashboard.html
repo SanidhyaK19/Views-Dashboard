@@ -1,0 +1,525 @@
+import re
+import json
+
+# 1. Your FULL Raw Data
+raw_data = """
+Lex Youtube Views (13th February- 15th March) 1,01,178
+https://www.youtube.com/shorts/UExOKZO9MTM
+https://www.youtube.com/shorts/jDDUSn49mek
+https://www.youtube.com/shorts/7SsABzPcD5Y
+https://www.youtube.com/shorts/chTKtUm83Zo
+https://www.youtube.com/shorts/PN6HUykMWoY
+https://www.youtube.com/shorts/J_KkYcWtEgk
+https://www.youtube.com/shorts/wWKWnIn52kk
+https://www.youtube.com/shorts/vpgo3wFV4wo
+https://www.youtube.com/shorts/sL0rfwRJmw0
+https://www.youtube.com/shorts/CQ_dYMA-fIk
+https://www.youtube.com/shorts/TN_9hb58J9w
+https://www.youtube.com/shorts/_LKsOnceaOU
+https://www.youtube.com/shorts/8gUMRzTI8y8
+https://www.youtube.com/shorts/hBQlEJxwA00
+https://www.youtube.com/shorts/q86Av-EpPW4
+https://www.youtube.com/shorts/Hg4Jj37ABio
+https://www.youtube.com/shorts/aQM4GXrnQuY
+https://www.youtube.com/shorts/X2FBZ3vMHtI
+https://www.youtube.com/shorts/lgUmFvrOl1I
+https://www.youtube.com/shorts/10-bWzyBykI
+https://www.youtube.com/shorts/siKjCdHbMD0
+https://www.youtube.com/shorts/miIcie00ncY
+https://www.youtube.com/shorts/3L0JiizaspA
+https://www.youtube.com/shorts/bBV8Mo_ZoeM
+https://www.youtube.com/shorts/anDb4CSWrSg
+https://www.youtube.com/shorts/z6s2PHOaIgQ
+https://www.youtube.com/shorts/r3hFyl6jxwU
+https://www.youtube.com/shorts/o7I4-23VjT4
+
+Lex Instagram Views (13th February- 15th March) 4,90,732
+https://www.instagram.com/thepokecipher/reel/DU1WUaUE0lA/
+https://www.instagram.com/thepokecipher/reel/DVzYLank9K0/
+https://www.instagram.com/thepokecipher/reel/DVtl1htk-O4/
+https://www.instagram.com/thepokecipher/reel/DVzBOGTE5_G/
+https://www.instagram.com/thepokecipher/reel/DVwTjCjE3uY/
+https://www.instagram.com/thepokecipher/reel/DVtbfd9E_W5/
+https://www.instagram.com/thepokecipher/reel/DVqxmatk4Po/
+https://www.instagram.com/thepokecipher/reel/DVo-f2aEx7i/
+https://www.instagram.com/thepokecipher/reel/DVLA-GJE7TW/
+https://www.instagram.com/thepokecipher/reel/DVG7DqvE-Oy/
+https://www.instagram.com/thepokecipher/reel/DVEjWN0EyeQ/
+https://www.instagram.com/thepokecipher/reel/DVKRY9Vk1Nu/
+https://www.instagram.com/thepokecipher/reel/DUqxf0QEwF2/
+https://www.instagram.com/thepokecipher/reel/DUrDP1ZkwTl/
+https://www.instagram.com/thepokecipher/reel/DUtPGCFk1CI/
+https://www.instagram.com/thepokecipher/reel/DUydjTwEy8t/
+https://www.instagram.com/thepokecipher/reel/DU0_Q9Rk138/
+https://www.instagram.com/thepokecipher/reel/DUvtIO6k3VF/
+https://www.instagram.com/thepokecipher/reel/DUq5iYOky0T/
+https://www.instagram.com/thepokecipher/reel/DU3nar3EzOG/
+https://www.instagram.com/thepokecipher/reel/DU53kXhE_kl/
+https://www.instagram.com/thepokecipher/reel/DU8wz04k1bl/
+https://www.instagram.com/thepokecipher/reel/DVjhDlME3Wy/
+https://www.instagram.com/thepokecipher/reel/DVhthE5k3xG/
+https://www.instagram.com/thepokecipher/reel/DVjqJXLKXmM/
+https://www.instagram.com/thepokecipher/reel/DT8LcBpkzDo/
+https://www.instagram.com/thepokecipher/reel/DVRnlnTE4Kf/
+https://www.instagram.com/thepokecipher/reel/DU8YAYxE1xG/
+https://www.instagram.com/thepokecipher/reel/DVBKQByk_if/
+https://www.instagram.com/thepokecipher/reel/DVPUswGk9DJ/
+https://www.instagram.com/thepokecipher/reel/DVODfHCk5jX/
+
+Kaito Youtube Views (13th February- 15th March) 43,116
+https://youtube.com/shorts/WdzpYMEpfFU?si=UlIl_xsLfskTRrJi
+https://youtube.com/shorts/AYpiU9FId-s?si=Grfj9u-O3XA326fh
+https://youtube.com/shorts/jHhgwQZ0lPM?si=Ud7v4683gvgAg0zn
+https://youtube.com/shorts/QIL1VbdElcI?si=KsMOxk4n0-eBYuWb
+https://youtube.com/shorts/u5e9SO4C5ro?si=Kd9RNXLWuiMnEayF
+https://youtube.com/shorts/yX2gwQTCx0c?si=XUefXNBh67yVcT8R
+https://youtube.com/shorts/mjpmtCVDK5I?si=hJU4DsUaIdD-idr6
+https://youtube.com/shorts/numVeN3cwSo?si=8Ps_3lrsvys_fhFD
+https://youtube.com/shorts/evdyq0BH_Bw?si=ZGZub3HuiEPeKg2P
+https://youtube.com/shorts/OSDr8aEh-t4?si=WDObJMpcQqpVSe0V
+
+Kaito Instagram Views (13th February- 15th March) 1,56,265
+https://www.instagram.com/reel/DVzI9_sk-Ze/?igsh=MW1jbjRudXZnYWh0aA==
+https://www.instagram.com/reel/DVwk4QPDMsm/?igsh=aXZmdDl5aWR5aWMw
+https://www.instagram.com/reel/DVt8niak6iJ/?igsh=MXB6dnJ1bGk1dDBjNA==
+https://www.instagram.com/reel/DVowI_NE203/?igsh=MWQ0ejFlZmpoMmtqYg==
+https://www.instagram.com/reel/DVovyZhk3bI/?igsh=MmFrdG9ybzRjdGJ5
+https://www.instagram.com/reel/DVB5rwYEnoS/?igsh=b2Fuc2lvbHp4ODBi
+https://www.instagram.com/reel/DU6Ly_MEojl/?igsh=djFpdDMyZW5vdTJi
+https://www.instagram.com/reel/DVy5_l2gQk8/?igsh=MWJwaGhvaXpiOWw1NA==
+https://www.instagram.com/reel/DVedEMNk7iB/?igsh=M2xmd2w4amQ2dzhu
+https://www.instagram.com/reel/DVW0tTjE8z6/?igsh=NHdwbmlxNjk5bG5r
+https://www.instagram.com/reel/DVT_nQpEqWF/?igsh=OGI0cHZxNThlODlo
+https://www.instagram.com/reel/DVRm_Okk_to/?igsh=dG9zZ3pybmUyMzVn
+https://www.instagram.com/reel/DVPFE56k6CR/?igsh=MXBjOHMxOTVxMmM2dw==
+https://www.instagram.com/reel/DVPDLPXEylJ/?igsh=MW12MHVwbmV6OHQwdA==
+https://www.instagram.com/reel/DU846zokmhe/?igsh=N2NjYmZybTFyb3c0
+https://www.instagram.com/reel/DU37hnfExcX/?igsh=eTVubjJjMDVwemhx
+https://www.instagram.com/reel/DUzQctZgUJG/?igsh=MXJ6ODE5Yzh0aHIxdQ==
+https://www.instagram.com/reel/DUtaXBKkg65/?igsh=NDdmaTJvMGlyaDlv
+https://www.instagram.com/reel/DUo6oCVEsQp/?igsh=dXNpMnhxZjRhOHpj
+https://www.instagram.com/reel/DV1l6EBDafY/?igsh=MWJ1YzJqZHVkdmU4aQ==
+
+Thepoketheory Youtube Views (13th February- 15th March) 29,880
+https://youtube.com/shorts/zW2MrQeWJU8?si=LR70lTzUZE4wSIsl
+https://youtube.com/shorts/madqXvN2t3M?si=Py6UmUkN5xjF0IQl
+https://youtube.com/shorts/JY8ngVS-B5s?si=sEd04o0q1sDnQUyE
+https://youtube.com/shorts/u1aMzLcX8yk?si=53pprFI8zTsqvIiF
+https://youtube.com/shorts/vssZHr7EXbQ?si=zXYa8FunCZGUbSXj
+https://youtube.com/shorts/lCwtxh6gD1U?si=iNBu0fnT3nivCpQ1
+https://youtube.com/shorts/lKBaM16J7ts?si=0_TPWpUzXlYDBF4C
+https://youtube.com/shorts/2JTYfJdA4lc?si=HB1iZaHcN58fac6D
+https://youtube.com/shorts/JBLajvrt2Xg?si=KIW4xrkiIjHCqYWf
+https://youtube.com/shorts/ILiboMq0rn4?si=ouP_g3ulnMF3bas_
+https://youtube.com/shorts/pmXZgSq6lyk?si=pRJ0ZY2a4j9ccmqD
+https://youtube.com/shorts/L1jnGHVxiyA?si=jI_1yyFtkefe9ytH
+
+Thepoketheory Instagram Views (13th February- 15th March) 46,137
+https://www.instagram.com/reel/DVwmxLjkuw3/?igsh=MXRybzFtdzduc29wag==
+https://www.instagram.com/reel/DVt7d9Ck0pG/?igsh=MXNmczh2NTF2bnk3bg==
+https://www.instagram.com/reel/DVoznl7kjVu/?igsh=N3ZyZDhqY2thNWdl
+https://www.instagram.com/reel/DVozZGtkqxN/?igsh=MWVlbnhkY3lubHVxMQ==
+https://www.instagram.com/reel/DU_TyFPEsEt/?igsh=MWZzbmp4NG9wZXgxMA==
+https://www.instagram.com/reel/DU80yltEhux/?igsh=YndvODBha3I5Mmpr
+https://www.instagram.com/reel/DU6N__jEqGt/?igsh=MTI1anlhbHhmZXgzaw==
+https://www.instagram.com/reel/DV1mXPxDVwL/?igsh=MXVwNzRpcWVkN2cxNg==
+https://www.instagram.com/reel/DVzNGjrEplB/?igsh=MW95emNxeG96Y3Y0cw==
+https://www.instagram.com/reel/DVg4BZpEiem/?igsh=eDh6OGljaWdrdDAx
+
+Riley Youtube Views (13th February- 15th March) 14,128
+https://youtube.com/shorts/vmM9YNeC9HM?si=KBPPCBTPYsGzQQ6t
+https://youtube.com/shorts/cAwODIuJGZw?si=PKpi_dI7nWJdOuwB
+https://youtube.com/shorts/_dytxMIxzks?si=HUsExV-7t_8ZZ1D1
+https://youtube.com/shorts/SagO0h5oKPU?si=tJNDGAWDD2_xL-uj
+https://youtube.com/shorts/AWWmtEafvaY?si=Mom5E4eBdf4JIs-8
+https://youtube.com/shorts/Rf_oi54ocEw?si=0HTBE5VxxclcGULp
+https://youtube.com/shorts/PgnHASivzto?si=Wj68UBBC_x64rBWU
+https://youtube.com/shorts/7UiD7_pGqhg?si=U4uDyrPXYxYMWzII
+https://youtube.com/shorts/GRhNsY6in6c?si=XOCrm6M-nFOsnlW9
+https://youtube.com/shorts/ep_-09Yzj00?si=B8Fft8ZL4OF1Pw1a
+https://youtube.com/shorts/UBw5Tof-d0A?si=YVquO98IzVHU9YHz
+https://youtube.com/shorts/FpfY72jDM9g?si=BvPyKII2nXsZfssN
+
+Riley Instagram Views (13th February- 15th March) 32,021
+https://www.instagram.com/reel/DVwl1p9k3yj/?igsh=MThpejR6bTFoc3Yxcg==
+https://www.instagram.com/reel/DVt6Txek9nJ/?igsh=MWJvY29uMzhlcXZ5OA==
+https://www.instagram.com/reel/DVRkVoFkz2Y/?igsh=c3g1ZnY3am5sOWcz
+https://www.instagram.com/reel/DU3vglUkyZ8/?igsh=MWttbWh5Y2NrMzJudg==
+https://www.instagram.com/reel/DU8u1TcE-ZD/?igsh=MTc5aHFjcm92Nm92NQ==
+https://www.instagram.com/reel/DU_TWVqE2a5/?igsh=NXAzaXFqaXB1NGIz
+https://www.instagram.com/reel/DU6RjhHk1Gr/?igsh=MWVwNnFnZjFndjAyNg==
+https://www.instagram.com/p/DVEcUXkkxcd/?igsh=MTFyc3o4NWliNmtrNw==
+https://www.instagram.com/reel/DVHBuDckx0j/?igsh=MWpwN2trYWM0YzZmNw==
+https://www.instagram.com/reel/DV1limIiLgU/?igsh=MWZsb2ttMzMwZWt1aw==
+https://www.instagram.com/reel/DV4pyGHk-KQ/?igsh=bWxieG1ha3U1MHV5
+
+Pokequeenz Instagram Views (13th February- 15th March) 8011
+https://www.instagram.com/pokequeenz/reel/DVH8rgQDf1k/
+https://www.instagram.com/pokequeenz/reel/DVJ2WIgEb0S/
+https://www.instagram.com/pokequeenz/reel/DVRKcvnDTp_/
+https://www.instagram.com/pokequeenz/reel/DU1QuMJE7NR/
+
+Pokequeenz Youtube Views (13th February- 15th March) 18,200
+https://www.youtube.com/shorts/EvUqro8XMwM
+https://www.youtube.com/shorts/IQRm0QD9Hbg
+https://www.youtube.com/shorts/fTbBA_YgTwo
+https://www.youtube.com/shorts/tuMQaJfP1Z0
+https://www.youtube.com/shorts/c2KuSOQLFb8
+
+Pokeassetvault Youtube Views (13th February- 15th March) 7,600
+https://youtube.com/shorts/Q-mH90F7ZXw?si=QABHaTxmLGUb86P1
+https://youtube.com/shorts/SpoqhSyacHs?si=7x6L-fugkaO_kZCC
+https://youtube.com/shorts/E5ju4IrVGW8?si=MBG6HUJcih6BKC44
+https://youtube.com/shorts/fBbttr3rShM?si=P4YGDpDl7WaNe35b
+https://youtube.com/shorts/EN4LV1J-0EE?si=zeGuDODtaf_8PkN1
+https://youtube.com/shorts/ceOU128fzsU?si=GDQsApAKQIVKkFTM
+https://youtube.com/shorts/8dTQdk-qI6Q?si=UxyKjEOGBSUpwfEy
+https://youtube.com/shorts/2yR_9LMlK1c?si=wu9afUjpBi6iKJWC
+https://youtube.com/shorts/ByxUrIeBDZ8?si=K9ZNOBcy_5Wq0sAn
+
+PokeAssetVault Instagram Views (13th February- 15th March) 31,898
+https://www.instagram.com/reel/DUqypc1kgVP/?utViews-1996g_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DUtgJ8Lku2V/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==  
+https://www.instagram.com/reel/DUxFd20Ekdm/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA== 
+https://www.instagram.com/reel/DUywMQkE4C5/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==   
+https://www.instagram.com/reel/DU1dZC-k5y7/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA== 
+https://www.instagram.com/reel/DU375RCkwRc/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==   
+https://www.instagram.com/reel/DU40YtMkrk6/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==   
+https://www.instagram.com/reel/DU_oPSuklew/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==    
+https://www.instagram.com/reel/DVBkgUQEjIW/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==    
+https://www.instagram.com/reel/DU5l_UMkkLm/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==  
+https://www.instagram.com/reel/DU6pZfBkpzP/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==  
+https://www.instagram.com/reel/DU9N1PmktfF/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DU-t4VBEjFx/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==  
+https://www.instagram.com/reel/DVCQWSEkr1m/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==   
+https://www.instagram.com/reel/DVE8LdRkhLq/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==      
+https://www.instagram.com/reel/DVG2j3tkqMU/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==   
+https://www.instagram.com/reel/DVOo34IEkq8/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==       
+https://www.instagram.com/reel/DVRdZ7xEtUJ/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==     
+https://www.instagram.com/reel/DVRne5rEmlM/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==     
+https://www.instagram.com/reel/DVTlV91Ej-B/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instgram.com/reel/DVZfLc2EnnE/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVZgCBdks_1/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVbRCNdkt9e/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVel4OREgwV/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVem9KZEt2r/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVhDXf-EhcD/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVhDmkkEltG/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVjoRGkEnKA/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVkZsmKEmTu/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVo11LqkhUJ/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVrYfEuErIn/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVu_dLWkrWn/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DV1gHZoktZA/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+
+PokeDidYouknow Youtube Views (13th February- 15th March) 6,109
+https://youtube.com/shorts/0I_UTOcp71w?si=EzafAJ5EnuNBFn6Q
+https://youtube.com/shorts/BVW6-F3-duo?si=pXWqUEStn53v7Q6U
+https://youtube.com/shorts/ET4qjI6qpZo?si=qWXDFjUY7JKctPkJ
+https://youtube.com/shorts/Ff4LBwneEEI?si=HJiBSuMRaGe-_Qw9
+https://youtube.com/shorts/izo5xN4S7mg?si=lwcK6hlxSTMhiaJp
+https://youtube.com/shorts/ZfMP8ho_STI?si=6IEEJry_q5dzxDwI
+https://youtube.com/shorts/tx0fJyRxZkA?si=ru_VaVEg7b6I7yQX
+https://youtube.com/shorts/Mcwk2FQWtKg?si=z_IH4qZjizXGB4EW
+https://youtube.com/shorts/T40m7rHE8MU?si=q_veQON1CM6uulXE
+https://youtube.com/shorts/TVZkQkSD42g?si=-dQDy7WR2w6fnPN2
+https://youtube.com/shorts/t-sc40VIZBI?si=gQPHmrUbYNrsxC9n
+https://youtube.com/shorts/5YozO3VhWvY?si=z0mP0-g_1sO3KUQM
+https://youtube.com/shorts/Ld5M-a7U6XM?si=Ktk_Vy3-YJM3k-4N
+https://youtube.com/shorts/ONj_tkuUNpk?si=W9_0aolZmsOn--VS
+https://youtube.com/shorts/V7YVpXyKKAM?si=jcXs5j5GBWFdymQZ
+
+PokeDidYouknow Instagram Views (13th February- 15th March) 72,835
+https://www.instagram.com/reel/DVecOVTku8g/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVeYqS-EjLW/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVbz1VQEnxX/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVbdbMtkgt1/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVZblnHkgtO/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVZUFheEhv-/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVZSoPhkpeb/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVWpMh6EsJ8/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVWoypeErjl/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVWoypeErjl/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVWoMALkmot/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVTjweUktWH/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVTjweUktWH/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVRm_8PErAD/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVRdKf2Em0T/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVHTexokt78/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVGkdPOklZ-/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVE3NZtEodR/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVCR-_QEuck/?utm_source=ig_web_copy_link&igsh=ZDNlZDc0MzIxNw==
+https://www.instagram.com/reel/DU_pXYWkrqQ/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DU-pN4FkiKY/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DU9NYVTEpon/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DU5R06gkpGt/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DU41mEeEs-c/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DU365mJE3UO/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DU1XvVfk7Gl/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DUyt4U3k-GD/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DUwOw2uE8f6/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DUth3xWk4QP/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DUq8dbPkzr2/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+
+UltraBallZ Instagram Views (13th February- 15th March) 3,871
+https://www.instagram.com/reel/DUq93sBE1od/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DUtjzOZE0PW/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DUwL4Vyk2MH/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DU-mDkrEy7a/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DU_n0WPkztK/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVBjwE0E1Tv/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVCQ9jdkxHJ/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVRd3mUExH_/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVoybceE9wA/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+https://www.instagram.com/reel/DVrdAbaEyG9/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==
+
+Pokipodcast Instagram Views (13th February- 15th March) 4,619
+https://www.instagram.com/pokipodcast/reels/
+
+Pokipodcast Youtube Views (13th February- 15th March) 1,735
+https://www.youtube.com/@PokiPodKast
+
+PokipodcastOriginal Youtube Views (13th February- 15th March) 1,400
+https://www.youtube.com/@pokepodcastoriginal
+
+PokipodcastOriginal Instagram Views (13th February- 15th March) 2,768
+https://www.instagram.com/pokepodcastoriginal/reel/DUtbNuJE1hA/
+https://www.instagram.com/pokepodcastoriginal/reel/DU1W_D1EyM9/
+https://www.instagram.com/pokepodcastoriginal/reel/DU1YBHak5Fx/
+"""
+
+# 2. Parse the Data
+data = []
+current_avatar = None
+current_platform = None
+current_views = None
+current_links = []
+
+for line in raw_data.strip().split('\n'):
+    line = line.strip()
+    if not line: continue
+    
+    match = re.search(r'(.+?)\s+(Youtube|Instagram)\s+Views.*?\)\s+([\d,]+)', line, re.IGNORECASE)
+    if match:
+        if current_avatar:
+            data.append({
+                'avatar': current_avatar.strip().title(),
+                'platform': current_platform.strip().title(),
+                'views': int(current_views.replace(',', '')),
+                'links': current_links
+            })
+        current_avatar = match.group(1).strip()
+        current_platform = match.group(2).strip()
+        current_views = match.group(3).strip()
+        current_links = []
+    elif line.startswith('http'):
+        current_links.append(line)
+
+if current_avatar:
+    data.append({
+        'avatar': current_avatar.strip().title(),
+        'platform': current_platform.strip().title(),
+        'views': int(current_views.replace(',', '')),
+        'links': current_links
+    })
+
+# 3. Aggregate data for the Chart and Dashboard Header
+chart_data = {}
+grand_total_views = 0
+
+for item in data:
+    name = item['avatar']
+    views = item['views']
+    grand_total_views += views
+    if name not in chart_data:
+        chart_data[name] = 0
+    chart_data[name] += views
+
+avatars = list(chart_data.keys())
+total_views = list(chart_data.values())
+
+# 4. Generate HTML Table Rows and Modals (Separate Pages)
+table_rows = ""
+modals_html = ""
+
+for i, item in enumerate(data):
+    modal_id = f"modal_{i}"
+    
+    # Generate Preview Links for the table (Show max 2)
+    preview_links_html = ""
+    for link in item['links'][:2]:
+        preview_links_html += f'<li><a href="{link}" target="_blank" class="text-decoration-none text-truncate d-inline-block" style="max-width: 250px;">{link}</a></li>'
+    
+    # Add "See All" button if there are more links
+    if len(item['links']) > 2:
+        preview_links_html += f'<button class="btn btn-sm btn-outline-primary mt-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#{modal_id}">See All {len(item["links"])} Links</button>'
+    elif len(item['links']) == 0:
+        preview_links_html += "<li><span class='text-muted'>No links provided</span></li>"
+        
+    table_rows += f"""
+    <tr>
+        <td class="fw-bold">{item['avatar']}</td>
+        <td><span class="badge bg-{'danger' if item['platform'] == 'Youtube' else 'primary'}">{item['platform']}</span></td>
+        <td data-order="{item['views']}"><span class="fw-bold text-dark fs-6">{item['views']:,}</span></td>
+        <td><ul class="list-unstyled mb-0" style="font-size: 0.85rem;">{preview_links_html}</ul></td>
+    </tr>
+    """
+
+    # Generate the Modal (Pop-up Page) for this row
+    full_links_list = "".join([f'<a href="{link}" target="_blank" class="list-group-item list-group-item-action text-break text-primary">{link}</a>' for link in item['links']])
+    
+    modals_html += f"""
+    <div class="modal fade" id="{modal_id}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header bg-light">
+            <h5 class="modal-title fw-bold">
+                {item['avatar']} <span class="badge bg-{'danger' if item['platform'] == 'Youtube' else 'primary'} ms-2">{item['platform']}</span>
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded border">
+                <span class="text-muted text-uppercase fw-bold" style="font-size: 0.85rem;">Total Views Generated</span>
+                <span class="fs-4 fw-bold text-success">{item['views']:,}</span>
+            </div>
+            <h6 class="fw-bold mb-3 text-secondary">All Content Links ({len(item['links'])})</h6>
+            <div class="list-group list-group-flush border rounded">
+                {full_links_list}
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+
+# 5. Build the Full HTML File
+html_content = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar Analytics Dashboard</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    
+    <style>
+        body {{ background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+        .card {{ border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 12px; }}
+        .header-bg {{ background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 3rem 0; margin-bottom: -50px; padding-bottom: 80px; }}
+        .stat-card {{ background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); text-align: center; border-bottom: 5px solid #28a745; }}
+    </style>
+</head>
+<body>
+
+    <div class="header-bg text-center">
+        <h1 class="display-5 fw-bold mb-2">Campaign Performance</h1>
+        <p class="lead text-light opacity-75">Analytics Overview (Feb 13 - Mar 15)</p>
+    </div>
+
+    <div class="container mb-5 position-relative" style="z-index: 10;">
+        
+        <div class="row justify-content-center mb-5">
+            <div class="col-md-6 col-lg-4">
+                <div class="stat-card">
+                    <h5 class="text-muted text-uppercase mb-2" style="font-size: 0.9rem; letter-spacing: 1px;">Grand Total Views</h5>
+                    <h2 class="display-6 fw-bold text-dark mb-0">{grand_total_views:,}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card p-4">
+                    <h5 class="mb-4 fw-bold text-secondary">Views Distribution by Avatar</h5>
+                    <canvas id="viewsChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card p-4">
+                    <h5 class="mb-4 fw-bold text-secondary">Detailed Breakdown</h5>
+                    <div class="table-responsive">
+                        <table id="analyticsTable" class="table table-hover align-middle">
+                            <thead class="table-light text-muted">
+                                <tr>
+                                    <th>Avatar Name</th>
+                                    <th>Platform</th>
+                                    <th>Total Views</th>
+                                    <th>Content Links</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {table_rows}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {modals_html}
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Initialize Interactive Table
+        $(document).ready(function() {{
+            $('#analyticsTable').DataTable({{
+                "order": [[ 2, "desc" ]], // Sort by views descending
+                "pageLength": 10,
+                "language": {{
+                    "search": "Filter records:"
+                }}
+            }});
+        }});
+
+        // Initialize Chart
+        const ctx = document.getElementById('viewsChart').getContext('2d');
+        new Chart(ctx, {{
+            type: 'bar',
+            data: {{
+                labels: {json.dumps(avatars)},
+                datasets: [{{
+                    label: 'Total Views (Combined)',
+                    data: {json.dumps(total_views)},
+                    backgroundColor: 'rgba(42, 82, 152, 0.7)',
+                    borderColor: 'rgba(42, 82, 152, 1)',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                plugins: {{
+                    legend: {{ display: false }}
+                }},
+                scales: {{
+                    y: {{ beginAtZero: true, grid: {{ color: '#e9ecef' }} }},
+                    x: {{ grid: {{ display: false }} }}
+                }}
+            }}
+        }});
+    </script>
+</body>
+</html>
+"""
+
+# 6. Save the file
+filename = "interactive_dashboard.html"
+with open(filename, "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print("Success! Open the new 'interactive_dashboard.html' file.")
